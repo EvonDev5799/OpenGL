@@ -34,9 +34,9 @@ int main(int argc, char **argv)
      * HERE SHOULD COME THE INITIALIZATION CODE
      *********************************/
     GLfloat vertices[] = {
-        -0.5f, -0.5f, 1.f, 0.f, 0.f, // premier sommet
-        0.5f, -0.5f, 0.f, 1.f, 0.f,  // deuxième sommet
-        0.0f, 0.5f, 0.f, 0.f, 1.f    // troisième sommet
+        -1.f, -1.f, 1.f, 0.f, 0.f, // premier sommet
+        1.f, -1.f, 0.f, 1.f, 0.f,  // deuxième sommet
+        0.0f, 1.f, 0.f, 0.f, 1.f    // troisième sommet
     };
     GLuint vbo, vao;
 
