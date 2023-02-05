@@ -19,6 +19,44 @@ struct WindowParameters
     WindowParameters(uint32_t width, uint32_t height, const char *title) : width(width), height(height), title(title) {}
 };
 
+struct EarthProgram {
+    Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uEarthTexture;
+    GLint uCloudTexture;
+
+    EarthProgram(const FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "shaders/multiTex3D.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uEarthTexture = glGetUniformLocation(m_Program.getGLId(), "uEarthTexture");
+        uCloudTexture = glGetUniformLocation(m_Program.getGLId(), "uCloudTexture");
+    }
+};
+
+struct MoonProgram {
+    Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uTexture;
+
+    MoonProgram(const FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "shaders/tex3D.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uTexture = glGetUniformLocation(m_Program.getGLId(), "uTexture");
+    }
+};
+
 int main(int argc, char **argv)
 {
     WindowParameters window_params = WindowParameters(800, 600, "GLImac");
@@ -41,45 +79,57 @@ int main(int argc, char **argv)
      * HERE SHOULD COME THE INITIALIZATION CODE
      *********************************/
 
-    std::unique_ptr<Image> pEarthTex = loadImage("/home/evon/Desktop/GLImac-Template/assets/textures/EarthMap.jpg");
-    if (pEarthTex == NULL)
+    std::unique_ptr<Image> pEarthTexture = loadImage("/home/evon/Desktop/GLImac-Template/assets/textures/EarthMap.jpg");
+    if (pEarthTexture == NULL)
     {
         std::cerr << "image not fount at " << "/home/evon/Desktop/GLImac-Template/assets/textures/EarthMap.jpg" << std::endl;
         return EXIT_FAILURE;
     }
 
-    std::unique_ptr<Image> pMoonTex = loadImage("/home/evon/Desktop/GLImac-Template/assets/textures/MoonMap.jpg");
-    if (pEarthTex == NULL)
+    std::unique_ptr<Image> pMoonTexture = loadImage("/home/evon/Desktop/GLImac-Template/assets/textures/MoonMap.jpg");
+    if (pMoonTexture == NULL)
     {
         std::cerr << "image not fount at " << "//home/evon/Desktop/GLImac-Template/assets/textures/MoonMap.jpg" << std::endl;
         return EXIT_FAILURE;
     }
 
-    GLuint earthTex;
-    glGenTextures(1, &earthTex);
-    glBindTexture(GL_TEXTURE_2D, earthTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pEarthTex->getWidth(), pEarthTex->getHeight(), 0, GL_RGBA, GL_FLOAT, pEarthTex->getPixels());
+    std::unique_ptr<Image> pCloudTexture = loadImage("/home/evon/Desktop/GLImac-Template/assets/textures/CloudMap.jpg");
+    if (pCloudTexture == NULL)
+    {
+        std::cerr << "image not fount at " << "//home/evon/Desktop/GLImac-Template/assets/textures/CloudMap.jpg" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    GLuint earthTexture;
+    glGenTextures(1, &earthTexture);
+    glBindTexture(GL_TEXTURE_2D, earthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pEarthTexture->getWidth(), pEarthTexture->getHeight(), 0, GL_RGBA, GL_FLOAT, pEarthTexture->getPixels());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-
-    GLuint moonTex;
-    glGenTextures(1, &moonTex);
-    glBindTexture(GL_TEXTURE_2D, moonTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pMoonTex->getWidth(), pMoonTex->getHeight(), 0, GL_RGBA, GL_FLOAT, pMoonTex->getPixels());
+    GLuint moonTexture;
+    glGenTextures(1, &moonTexture);
+    glBindTexture(GL_TEXTURE_2D, moonTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pMoonTexture->getWidth(), pMoonTexture->getHeight(), 0, GL_RGBA, GL_FLOAT, pMoonTexture->getPixels());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    GLuint cloudTexture;
+    glGenTextures(1, &cloudTexture);
+    glBindTexture(GL_TEXTURE_2D, cloudTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pCloudTexture->getWidth(), pCloudTexture->getHeight(), 0, GL_RGBA, GL_FLOAT, pCloudTexture->getPixels());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-
-    Sphere s = Sphere(1, 10, 10);
+    Sphere sphere = Sphere(1, 100, 100);
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * s.getVertexCount(), s.getDataPointer(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * sphere.getVertexCount(), sphere.getDataPointer(), GL_STATIC_DRAW);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -101,15 +151,14 @@ int main(int argc, char **argv)
     glBindVertexArray(0);
 
     FilePath applicationPath(argv[0]);
-    Program program = loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
-                                  applicationPath.dirPath() + "shaders/tex.fs.glsl");
-    program.use();
+    EarthProgram earthProgram(applicationPath);
+    MoonProgram moonProgram(applicationPath);
 
     GLint uMVPMatrix = glGetUniformLocation(program.getGLId(), "uMVPMatrix");
     GLint uMVMatrix = glGetUniformLocation(program.getGLId(), "uMVMatrix");
     GLint uNormalMatrix = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
-    GLint uTexture = glGetUniformLocation(program.getGLId(), "uTexture");
-
+    GLint uEarthTexture = glGetUniformLocation(program.getGLId(), "uEarthTexture");
+    GLint uCloudTexture = glGetUniformLocation(program.getGLId(), "uCloudTexture");
     glEnable(GL_DEPTH_TEST);
 
     glm::mat4 projMatrix, MVMatrix, normalMatrix;
@@ -117,10 +166,8 @@ int main(int argc, char **argv)
 
     std::vector<glm::vec3> rotations;
     for (int i(0); i < 3; i++)
-    {
         rotations.push_back(glm::sphericalRand(1.f));
-        std::cout << rotations[i] << std::endl;
-    }
+
 
     // Application loop:
     bool done = false;
@@ -144,29 +191,28 @@ int main(int argc, char **argv)
 
         glBindVertexArray(vao);
 
-        glBindTexture(GL_TEXTURE_2D, earthTex);
-        MVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -5.f)); // Translation
-        MVMatrix = glm::rotate(MVMatrix, windowManager.getTime(), glm::vec3(0.f, 1.f, 0.f)); // Translation * Rotation
-        normalMatrix = glm::transpose(glm::inverse(MVMatrix));
-        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-        glDrawArrays(GL_TRIANGLES, 0, s.getVertexCount());
+        earthProgram.m_Program.use();
 
+        glUniform1i(earthProgram.uEarthTexture, 0);
+        glUniform1i(earthProgram.uCloudTexture, 1);
 
-        glBindTexture(GL_TEXTURE_2D, moonTex);
-        for (glm::vec3 r : rotations)
-        {
-            MVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -5.f));                // Translation
-            MVMatrix = glm::rotate(MVMatrix, windowManager.getTime(), r); // Translation * Rotation
-            MVMatrix = glm::translate(MVMatrix, 2.f * glm::normalize(glm::vec3(r.z, r.z, -r.x - r.b)));                      // Translation * Rotation * Translation
-            MVMatrix = glm::scale(MVMatrix, glm::vec3(0.2, 0.2, 0.2)); // Translation * Rotation * Translation * Scale
-            normalMatrix = glm::transpose(glm::inverse(MVMatrix));
-            glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-            glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-            glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-            glDrawArrays(GL_TRIANGLES, 0, s.getVertexCount());
-        }
+        glm::mat4 globalMVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0, 0, -5));
+
+        glm::mat4 earthMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), glm::vec3(0, 1, 0));
+        glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, 
+            glm::value_ptr(earthMVMatrix));
+        glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE, 
+            glm::value_ptr(glm::transpose(glm::inverse(earthMVMatrix))));
+        glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, 
+            glm::value_ptr(projMatrix * earthMVMatrix));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, earthTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, cloudTexture);
+
+        glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+
 
         glBindVertexArray(0);
 
