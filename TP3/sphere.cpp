@@ -76,10 +76,8 @@ int main(int argc, char **argv)
 
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 ProjMatrix, MVMatrix, NormalMatrix;
-    ProjMatrix = glm::perspective(glm::radians(70.f), (float) window_params.height / window_params.width, 0.1f, 100.f);
-    MVMatrix = glm::translate(glm::mat4(1.0f),glm::vec3(0, 0, -5));
-    NormalMatrix = glm::transpose(glm::inverse(MVMatrix));
+    glm::mat4 projMatrix, MVMatrix, normalMatrix;
+    projMatrix = glm::perspective(glm::radians(70.f), (float) window_params.height / window_params.width, 0.1f, 100.f);
 
     // Application loop:
     bool done = false;
@@ -102,11 +100,25 @@ int main(int argc, char **argv)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glBindVertexArray(vao);
-        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(ProjMatrix * MVMatrix));
-        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE, glm::value_ptr(NormalMatrix));
 
+        MVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -5.f)); // Translation
+        normalMatrix = glm::transpose(glm::inverse(MVMatrix));
+        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));        
         glDrawArrays(GL_TRIANGLES, 0, s.getVertexCount());
+        
+        MVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -5.f)); // Translation
+        MVMatrix = glm::rotate(MVMatrix, windowManager.getTime(), glm::vec3(0.f, 1.f, 0.f)); // Translation * Rotation
+        MVMatrix = glm::translate(MVMatrix, glm::vec3(-2.f, 0.f, 0.f)); // Translation * Rotation * Translation
+        //MVMatrix = glm::scale(MVMatrix, glm::vec3(0.2, 0.2, 0.2)); // Translation * Rotation * Translation * Scale
+        normalMatrix = glm::transpose(glm::inverse(MVMatrix));
+        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));           
+        glDrawArrays(GL_TRIANGLES, 0, s.getVertexCount());
+
+        
 
         glBindVertexArray(0);
 
