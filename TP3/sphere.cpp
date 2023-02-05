@@ -154,11 +154,6 @@ int main(int argc, char **argv)
     EarthProgram earthProgram(applicationPath);
     MoonProgram moonProgram(applicationPath);
 
-    GLint uMVPMatrix = glGetUniformLocation(program.getGLId(), "uMVPMatrix");
-    GLint uMVMatrix = glGetUniformLocation(program.getGLId(), "uMVMatrix");
-    GLint uNormalMatrix = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
-    GLint uEarthTexture = glGetUniformLocation(program.getGLId(), "uEarthTexture");
-    GLint uCloudTexture = glGetUniformLocation(program.getGLId(), "uCloudTexture");
     glEnable(GL_DEPTH_TEST);
 
     glm::mat4 projMatrix, MVMatrix, normalMatrix;
@@ -199,12 +194,9 @@ int main(int argc, char **argv)
         glm::mat4 globalMVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0, 0, -5));
 
         glm::mat4 earthMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), glm::vec3(0, 1, 0));
-        glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, 
-            glm::value_ptr(earthMVMatrix));
-        glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE, 
-            glm::value_ptr(glm::transpose(glm::inverse(earthMVMatrix))));
-        glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, 
-            glm::value_ptr(projMatrix * earthMVMatrix));
+        glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(earthMVMatrix));
+        glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(earthMVMatrix))));
+        glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * earthMVMatrix));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, earthTexture);
@@ -212,6 +204,26 @@ int main(int argc, char **argv)
         glBindTexture(GL_TEXTURE_2D, cloudTexture);
 
         glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+
+        moonProgram.m_Program.use();
+        glUniform1i(moonProgram.uTexture, 0);
+        for(glm::vec3 r : rotations) {
+
+            glm::mat4 moonMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), r);
+            moonMVMatrix = glm::translate(moonMVMatrix, 2.f * glm::normalize(glm::vec3(r.z, r.z, -r.x-r.y)));
+            moonMVMatrix = glm::rotate(moonMVMatrix, windowManager.getTime(), glm::vec3(0.f,1.f, 0.f));
+            moonMVMatrix = glm::scale(moonMVMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+
+
+            glUniformMatrix4fv(moonProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(moonMVMatrix));
+            glUniformMatrix4fv(moonProgram.uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(moonMVMatrix))));
+            glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * moonMVMatrix));
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, moonTexture);
+
+            glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+        }
 
 
         glBindVertexArray(0);
