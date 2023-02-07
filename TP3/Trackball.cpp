@@ -5,6 +5,7 @@
 #include <glimac/Sphere.hpp>
 #include <glimac/Program.hpp>
 #include <glimac/Image.hpp>
+#include <glimac/TrackballCamera.hpp>
 #include <vector>
 
 using namespace glimac;
@@ -156,13 +157,16 @@ int main(int argc, char **argv)
 
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 projMatrix, MVMatrix, normalMatrix;
+    glm::mat4 projMatrix;
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
+
+    TrackballCamera camera;
 
     std::vector<glm::vec3> rotations;
     for (int i(0); i < 3; i++)
         rotations.push_back(glm::sphericalRand(1.f));
 
+    glm::ivec2 mousePos = windowManager.getMousePosition();
 
     // Application loop:
     bool done = false;
@@ -191,9 +195,10 @@ int main(int argc, char **argv)
         glUniform1i(earthProgram.uEarthTexture, 0);
         glUniform1i(earthProgram.uCloudTexture, 1);
 
-        glm::mat4 globalMVMatrix = glm::translate(glm::mat4(1.f), glm::vec3(0, 0, -5));
+        glm::mat4 globalMVMatrix = glm::mat4(1.f);
 
-        glm::mat4 earthMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), glm::vec3(0, 1, 0));
+        glm::mat4 earthMVMatrix = globalMVMatrix;//glm::rotate(globalMVMatrix, windowManager.getTime(), glm::vec3(0, 1, 0));
+        earthMVMatrix = camera.getViewMatrix() * earthMVMatrix;
         glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(earthMVMatrix));
         glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(earthMVMatrix))));
         glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * earthMVMatrix));
@@ -204,15 +209,17 @@ int main(int argc, char **argv)
         glBindTexture(GL_TEXTURE_2D, cloudTexture);
 
         glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
-
+        
         moonProgram.m_Program.use();
         glUniform1i(moonProgram.uTexture, 0);
         for(glm::vec3 r : rotations) {
 
-            glm::mat4 moonMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), r);
+            glm::mat4 moonMVMatrix = globalMVMatrix;
+            moonMVMatrix = glm::rotate(globalMVMatrix, windowManager.getTime(), r);
             moonMVMatrix = glm::translate(moonMVMatrix, 2.f * glm::normalize(glm::vec3(r.z, r.z, -r.x-r.y)));
-            moonMVMatrix = glm::rotate(moonMVMatrix, windowManager.getTime(), glm::vec3(0.f,1.f, 0.f));
+            moonMVMatrix = glm::rotate(moonMVMatrix, windowManager.getTime(), r);
             moonMVMatrix = glm::scale(moonMVMatrix, glm::vec3(0.2f, 0.2f, 0.2f));
+            moonMVMatrix = camera.getViewMatrix() * moonMVMatrix;
 
 
             glUniformMatrix4fv(moonProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(moonMVMatrix));
@@ -223,6 +230,15 @@ int main(int argc, char **argv)
             glBindTexture(GL_TEXTURE_2D, moonTexture);
 
             glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+        }
+
+        glm::ivec2 nextMousePos = windowManager.getMousePosition();
+        glm::ivec2 delta = nextMousePos - mousePos;
+        mousePos = nextMousePos;
+        if (windowManager.isMouseButtonPressed(SDL_BUTTON_RIGHT))
+        {
+            camera.rotateLeft(delta.x);
+            camera.rotateUp(delta.y);
         }
 
 
