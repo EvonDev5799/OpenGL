@@ -48,20 +48,29 @@ std::vector<glm::vec3> smoothPath(std::vector<glm::vec3> track_points, float smo
     int source_size = track_points.size();
     for(int i(0); i < source_size; i++ )
     {
-        glm::vec3 point1 = track_points[i];
-        glm::vec3 point2 = track_points[(i + 1)%source_size];
-        glm::vec3 point3 = track_points[(i + 2)%source_size];
-        glm::vec3 path1 = point2 - point1;
-        glm::vec3 path2 = point3 - point2;
+        glm::vec3 prev = track_points[i];
+        glm::vec3 center = track_points[(i + 1)%source_size];
+        glm::vec3 next = track_points[(i + 2)%source_size];
 
-        glm::vec3 start = track_points[i ];
-        glm::vec3 arrival = track_points[(i + 1)%source_size];
-        glm::vec3 path = arrival - start;
+        glm::vec3 toprev = prev - center;
+        glm::vec3 tonext = next - center;
 
-        r.push_back(start + smooth_range*path);
-        r.push_back(start + (1.f - smooth_range)*path);
+        glm::vec3 point1 = center  + smooth_range * toprev;
+        glm::vec3 point2 = center;
+        glm::vec3 point3 = center  + smooth_range * tonext;
+
+        for(int j(0); j < smooth_points + 2; j++)
+        {
+            float t = ((float)j)/(smooth_points + 1);
+            glm::vec3 intermediate1 = (1-t)*point1 + t*point2;
+            glm::vec3 intermediate2 = (1-t)*point2 + t*point3;
+            glm::vec3 final = (1-t)*intermediate1 + t*intermediate2;
+
+            r.push_back(final);
+        }
 
     }
+    return r;
 }
 
 struct WindowParameters
@@ -148,10 +157,11 @@ int main(int argc, char **argv)
     uMVMatrix = glGetUniformLocation(program.getGLId(), "uMVMatrix");
     uNormalMatrix = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
 
-    std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 0.5f, 0.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
+    std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
+    trackPoints = smoothPath(trackPoints, 0.2f, 100);
     Track t(trackPoints);
-    std::vector<glm::mat4> rail_transform = rails(trackPoints, 100);
-
+    std::vector<glm::mat4> rail_transform = rails(trackPoints, 1000);
+    
     glm::vec3 globalUp(0.f, 1.f, 0.f);
 
     // Application loop:
