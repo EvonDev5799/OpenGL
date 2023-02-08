@@ -10,6 +10,60 @@
 
 using namespace glimac;
 
+std::vector<glm::mat4> rails(std::vector<glm::vec3> track_points, int n)
+{
+    std::vector<glm::mat4> r(2*n);
+
+    Track t(track_points);
+    float step_length = t.lenght()/n;
+    glm::mat4 scaling = glm::scale(glm::mat4(1.f), step_length*glm::vec3(1.f, .25f, .25f));
+
+    for(int i(0); i < n; i++)
+    {
+        glm::mat4 base = t.currentTransform();
+        glm::vec3 side = glm::normalize(glm::cross(t.currentDirection(), glm::vec3(0.f,1.f,0.f)));
+
+        glm::mat4 transform_side_1(1.f);
+        transform_side_1 = glm::translate(transform_side_1, .05f * side);
+        transform_side_1 = transform_side_1 * base * scaling;
+        r[2*i] = transform_side_1;
+
+        glm::mat4 transform_side_2(1.f);
+        transform_side_2 = glm::translate(transform_side_2, -.05f * side);
+        transform_side_2 = transform_side_2 * base * scaling;
+        r[2*i + 1] = transform_side_2;
+
+        t.advance(step_length);
+    }
+    return r;
+}
+
+std::vector<glm::vec3> smoothPath(std::vector<glm::vec3> track_points, float smooth_range, int smooth_points)
+{
+    if(smooth_range > 0.5f || smooth_range < 0.f)
+        std::cout << "smooth_range value out of [0 , 0.5]" << std::endl;
+
+    std::vector<glm::vec3> r;
+
+    int source_size = track_points.size();
+    for(int i(0); i < source_size; i++ )
+    {
+        glm::vec3 point1 = track_points[i];
+        glm::vec3 point2 = track_points[(i + 1)%source_size];
+        glm::vec3 point3 = track_points[(i + 2)%source_size];
+        glm::vec3 path1 = point2 - point1;
+        glm::vec3 path2 = point3 - point2;
+
+        glm::vec3 start = track_points[i ];
+        glm::vec3 arrival = track_points[(i + 1)%source_size];
+        glm::vec3 path = arrival - start;
+
+        r.push_back(start + smooth_range*path);
+        r.push_back(start + (1.f - smooth_range)*path);
+
+    }
+}
+
 struct WindowParameters
 {
 
@@ -96,6 +150,7 @@ int main(int argc, char **argv)
 
     std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(1.f, 0.5f, 0.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
     Track t(trackPoints);
+    std::vector<glm::mat4> rail_transform = rails(trackPoints, 100);
 
     glm::vec3 globalUp(0.f, 1.f, 0.f);
 
@@ -124,8 +179,9 @@ int main(int argc, char **argv)
         glm::mat4 rotateMAt = t.currentTransform();
 
         glm::mat4 MVMatrix = glm::mat4(1.f);
-        MVMatrix = glm::translate(MVMatrix, glm::vec3(0.f, .5f, 0.f));
+        MVMatrix = glm::translate(MVMatrix, glm::vec3(0.f, .05f, 0.f));
         MVMatrix = MVMatrix * rotateMAt;
+        MVMatrix = glm::scale(MVMatrix, glm::vec3(.2f, .1f, .1f));
         MVMatrix = camera.getViewMatrix() * MVMatrix;
         glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
         glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
@@ -133,6 +189,17 @@ int main(int argc, char **argv)
 
         glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
 
+        for(glm::mat4 transform : rail_transform)
+        {
+            MVMatrix = camera.getViewMatrix() * transform;
+            glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
+            glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
+            glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+
+            glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+        }
+
+        /*
         MVMatrix = glm::mat4(1.f);
         MVMatrix = glm::translate(MVMatrix, glm::vec3(2.5f,-.5f,-1.f));
         MVMatrix = glm::scale(MVMatrix, glm::vec3(5.f, 1.f, 2.f));
@@ -142,6 +209,7 @@ int main(int argc, char **argv)
         glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
 
         glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+        */
 
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
@@ -155,18 +223,18 @@ int main(int argc, char **argv)
 
         if (windowManager.isMouseButtonPressed(SDL_BUTTON_RIGHT))
         {
-            camera.rotateLeft(10.f * -delta.x * deltaTime);
-            camera.rotateUp(10.f * -delta.y * deltaTime);
+            camera.rotateLeft(50.f * -delta.x * deltaTime);
+            camera.rotateUp(50.f * -delta.y * deltaTime);
         }
 
         if (windowManager.isKeyPressed(SDLK_z))
-            camera.moveFront(deltaTime);
+            camera.moveFront(10.f*deltaTime);
         if (windowManager.isKeyPressed(SDLK_s))
-            camera.moveFront(-deltaTime);
+            camera.moveFront(-10.f * deltaTime);
         if (windowManager.isKeyPressed(SDLK_d))
-            camera.moveLeft(-deltaTime);
+            camera.moveLeft(-10.f * deltaTime);
         if (windowManager.isKeyPressed(SDLK_q))
-            camera.moveLeft(deltaTime);
+            camera.moveLeft(10.f * deltaTime);
 
         glBindVertexArray(0);
 

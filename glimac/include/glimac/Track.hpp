@@ -14,13 +14,17 @@ public:
     glm::vec3 currentLocation();
     glm::vec3 currentDirection();
     glm::mat4 currentTransform();
+
     void advance(float distance);
+
+    float lenght();
 
 
 private:
     std::vector<glm::vec3> track;
     std::vector<glm::vec3> paths;
     std::vector<float> lengths;
+    float total_length;
     float distance;
     int total_count;
     int index;

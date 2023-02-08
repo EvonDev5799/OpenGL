@@ -8,20 +8,27 @@ namespace glimac
         paths = std::vector<glm::vec3>(total_count);
 
         glm::vec3 start, arrival, path;
+        float length;
 
         for(int i(0); i < (total_count - 1); i++)
         {
             start = track[i];
             arrival = track[i+1];
             path = arrival - start;
+            length = glm::length(path);
+
             paths[i] = path;
-            lengths[i] = glm::length(path);
+            lengths[i] = length;
+            total_length += length;
         }
         start = track[total_count-1];
         arrival = track[0];
         path = arrival - start;
+        length = glm::length(path);
+
         paths[total_count-1] = path;
         lengths[total_count-1] = glm::length(path);
+        total_length += length;
     }
 
     void Track::nextIndex()
@@ -34,7 +41,7 @@ namespace glimac
         index = (index - 1 + total_count)%total_count;        
     }
 
-    Track::Track(std::vector<glm::vec3> track) : track(track), distance(0.f), index(0), total_count(track.size())
+    Track::Track(std::vector<glm::vec3> track) : track(track), distance(0.f), index(0), total_count(track.size()), total_length(0.f)
     {
         computeSegData();
     }
@@ -54,6 +61,12 @@ namespace glimac
             prevIndex();
             distance += lengths[index];
         }
+    }
+
+
+    float Track::lenght()
+    {
+        return total_length;
     }
 
     glm::vec3 Track::currentLocation()
@@ -78,7 +91,7 @@ namespace glimac
 
         glm::vec3 horizontalVec(direction.x, 0.f, direction.z);
         horizontalVec = glm::normalize(horizontalVec);
-        float horizontalAngle = glm::sign(direction.z) * glm::acos(glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f)));
+        float horizontalAngle = -glm::sign(direction.z) * glm::acos(glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f)));
 
 
 
