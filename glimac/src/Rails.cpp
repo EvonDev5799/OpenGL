@@ -62,33 +62,14 @@ void Rail::build(std::vector<glm::vec3> points, float radius)
     dir2 = glm::normalize(p2 - p3);
     
     float angle = glm::acos(glm::dot(dir1, dir2))/2;
-    std::cout << angle << std::endl;
 
-    if (angle == 0)
-    {
-        side1 = glm::normalize(glm::cross(dir1, global_up));
-        up1 = glm::cross(side1, dir1);
+    side1 = glm::normalize(glm::cross(dir1, global_up));
+    up1 = glm::cross(side1, dir1);
 
-        oldsquare[0] = p2 + side1 * radius + up1*radius;
-        oldsquare[1] = p2 - side1 * radius + up1*radius;
-        oldsquare[2] = p2 - side1 * radius - up1*radius;
-        oldsquare[3] = p2 + side1 * radius - up1*radius;
-    }
-    else
-    {
-
-        side2 = glm::normalize(glm::cross(global_up, dir2));
-        up2 = glm::cross(dir2, side2);
-
-        float offset = glm::tan(angle) * glm::sqrt(2.f) * radius;
-
-        base2 = p2 - dir2*offset;
-
-        oldsquare[0] = base2 + side2 * radius + up2*radius;
-        oldsquare[1] = base2 - side2 * radius + up2*radius;
-        oldsquare[2] = base2 - side2 * radius - up2*radius;
-        oldsquare[3] = base2 + side2 * radius - up2*radius;
-    }
+    oldsquare[0] = p2 + side1 * radius + up1*radius;
+    oldsquare[1] = p2 - side1 * radius + up1*radius;
+    oldsquare[2] = p2 - side1 * radius - up1*radius;
+    oldsquare[3] = p2 + side1 * radius - up1*radius;
 
     for (int i(0); i < n; i++)
     {
@@ -101,55 +82,18 @@ void Rail::build(std::vector<glm::vec3> points, float radius)
         
         angle = glm::acos(glm::dot(dir1, dir2))/2;
         std::cout << "angle" << angle << std::endl;
+    
+        side1 = glm::normalize(glm::cross(dir1, global_up));
+        up1 = glm::cross(side1, dir1);
 
-        if (angle == 0)
-        {
-            side1 = glm::normalize(glm::cross(dir1, global_up));
-            up1 = glm::cross(side1, dir1);
-
-            square1[0] = p2 + side1 * radius + up1*radius;
-            square1[1] = p2 - side1 * radius + up1*radius;
-            square1[2] = p2 - side1 * radius - up1*radius;
-            square1[3] = p2 + side1 * radius - up1*radius;
-            
-            makeFaces(oldsquare, square1);
-            oldsquare = square1;
-        }
-        else
-        {
-            side1 = glm::normalize(glm::cross(dir1, global_up));
-            std::cout << "side1" << side1 << std::endl;
-            up1 = glm::cross(side1, dir1);
-            std::cout << "up1" << up1 << std::endl;
-
-            side2 = glm::normalize(glm::cross(global_up, dir2));
-            std::cout << "side2" << side2 << std::endl;
-            up2 = glm::cross(dir2, side2);
-            std::cout << "side2" << side2 << std::endl;
-
-            float offset = glm::tan(angle) * glm::sqrt(2.f) * radius;
-            std::cout << "offset" << offset << std::endl;
-
-            base1 = p2 - dir1*offset;
-            std::cout << "base1" << base1 << std::endl;
-            base2 = p2 - dir2*offset;
-            std::cout << "base2" << base2 << std::endl;
-
-            square1[0] = base1 + side1 * radius + up1*radius;
-            square1[1] = base1 - side1 * radius + up1*radius;
-            square1[2] = base1 - side1 * radius - up1*radius;
-            square1[3] = base1 + side1 * radius - up1*radius;
-
-            square2[0] = base2 + side2 * radius + up2*radius;
-            square2[1] = base2 - side2 * radius + up2*radius;
-            square2[2] = base2 - side2 * radius - up2*radius;
-            square2[3] = base2 + side2 * radius - up2*radius;
-            
-
-            makeFaces(oldsquare,square1);
-            makeFaces(square1, square2);
-            oldsquare = square2;
-        }
+        square1[0] = p2 + side1 * radius + up1*radius;
+        square1[1] = p2 - side1 * radius + up1*radius;
+        square1[2] = p2 - side1 * radius - up1*radius;
+        square1[3] = p2 + side1 * radius - up1*radius;
+        
+        makeFaces(oldsquare, square1);
+        oldsquare = square1;
+        
     }
 }
 
