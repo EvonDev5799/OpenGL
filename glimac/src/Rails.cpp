@@ -1,7 +1,5 @@
 #include "glimac/Rails.hpp"
 
-#include <iostream>
-
 namespace glimac
 {
 Rail::Rail(std::vector<glm::vec3> points, float radius)
@@ -50,8 +48,8 @@ void Rail::makeFaces(std::array<glm::vec3, 4> start,std::array<glm::vec3, 4> arr
 void Rail::build(std::vector<glm::vec3> points, float radius)
 {
     int n = points.size();
-    std::array<glm::vec3, 4> oldsquare, square1, square2;
-    glm::vec3 p1, p2, p3, dir1, dir2, side1, side2, up1, up2, base1, base2;
+    std::array<glm::vec3, 4> oldsquare, square;
+    glm::vec3 p1, p2, p3, dir1, dir2, side, local_up, base;
     glm::vec3 global_up(0.f, 1.f, 0.f);
 
     p1 = points[n-1];
@@ -63,13 +61,13 @@ void Rail::build(std::vector<glm::vec3> points, float radius)
     
     float angle = glm::acos(glm::dot(dir1, dir2))/2;
 
-    side1 = glm::normalize(glm::cross(dir1, global_up));
-    up1 = glm::cross(side1, dir1);
+    side = glm::normalize(glm::cross(dir1, global_up));
+    local_up = glm::cross(side, dir1);
 
-    oldsquare[0] = p2 + side1 * radius + up1*radius;
-    oldsquare[1] = p2 - side1 * radius + up1*radius;
-    oldsquare[2] = p2 - side1 * radius - up1*radius;
-    oldsquare[3] = p2 + side1 * radius - up1*radius;
+    oldsquare[0] = p2 + side * radius + local_up*radius;
+    oldsquare[1] = p2 - side * radius + local_up*radius;
+    oldsquare[2] = p2 - side * radius - local_up*radius;
+    oldsquare[3] = p2 + side * radius - local_up*radius;
 
     for (int i(0); i < n; i++)
     {
@@ -81,19 +79,17 @@ void Rail::build(std::vector<glm::vec3> points, float radius)
         dir2 = glm::normalize(p2 - p3);
         
         angle = glm::acos(glm::dot(dir1, dir2))/2;
-        std::cout << "angle" << angle << std::endl;
     
-        side1 = glm::normalize(glm::cross(dir1, global_up));
-        up1 = glm::cross(side1, dir1);
+        side = glm::normalize(glm::cross(dir1, global_up));
+        local_up = glm::cross(side, dir1);
 
-        square1[0] = p2 + side1 * radius + up1*radius;
-        square1[1] = p2 - side1 * radius + up1*radius;
-        square1[2] = p2 - side1 * radius - up1*radius;
-        square1[3] = p2 + side1 * radius - up1*radius;
+        square[0] = p2 + side * radius + local_up*radius;
+        square[1] = p2 - side * radius + local_up*radius;
+        square[2] = p2 - side * radius - local_up*radius;
+        square[3] = p2 + side * radius - local_up*radius;
         
-        makeFaces(oldsquare, square1);
-        oldsquare = square1;
-        
+        makeFaces(oldsquare, square);
+        oldsquare = square;        
     }
 }
 

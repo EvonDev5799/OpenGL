@@ -46,6 +46,70 @@ std::vector<glm::vec3> smoothPath(std::vector<glm::vec3> track_points, float smo
     return r;
 }
 
+std::vector<glm::vec3> rightTrack(std::vector<glm::vec3> points, float offset)
+{
+    std::vector<glm::vec3> r;
+    glm::vec3 a, b, c, dir1, dir2, side1, side2;
+    glm::vec3 up(0.f, 1.f, 0.f);
+    int n = points.size();
+
+    for(int i(0); i < n; i++)
+    {
+        a = points[i];
+        b = points[(i+1)%n];
+        c = points[(i+2)%n];
+
+        dir1 = glm::normalize(b-a);
+        dir2 = glm::normalize(c-b);
+
+        side1 = glm::normalize(glm::cross(dir1, up));
+        side2 = glm::normalize(glm::cross(dir2, up));
+        float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
+        if ( curve > 0)
+        {
+            r.push_back(b + ((side1 + side2) * offset)/2.f);
+        }
+        else
+        {
+            r.push_back(b + side1 * offset);
+            r.push_back(b + side2 * offset);
+        }
+    }
+    return r;
+}
+
+std::vector<glm::vec3> leftTrack(std::vector<glm::vec3> points, float offset)
+{
+    std::vector<glm::vec3> r;
+    glm::vec3 a, b, c, dir1, dir2, side1, side2;
+    glm::vec3 up(0.f, 1.f, 0.f);
+    int n = points.size();
+
+    for(int i(0); i < n; i++)
+    {
+        a = points[i];
+        b = points[(i+1)%n];
+        c = points[(i+2)%n];
+
+        dir1 = glm::normalize(b-a);
+        dir2 = glm::normalize(c-b);
+
+        side1 = glm::normalize(glm::cross(up, dir1));
+        side2 = glm::normalize(glm::cross(up, dir2));
+        float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
+        if ( curve > 0)
+        {
+            r.push_back(b + ((side1 + side2) * offset)/2.f);
+        }
+        else
+        {
+            r.push_back(b + side1 * offset);
+            r.push_back(b + side2 * offset);
+        }
+    }
+    return r;
+}
+
 struct WindowParameters
 {
 
@@ -55,6 +119,35 @@ struct WindowParameters
 
     WindowParameters(uint32_t width, uint32_t height, const char *title) : width(width), height(height), title(title) {}
 };
+
+GLuint makeVAO(int vertex_count, const ShapeVertex* data_ptr)
+{
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * vertex_count, data_ptr, GL_STATIC_DRAW);
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    const GLuint VERTEX_ATTR_POSITION = 0;
+    const GLuint VERTEX_ATTR_NORMAL = 1;
+    const GLuint VERTEX_ATTR_TEX_COORD = 2;
+
+    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
+    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
+    glEnableVertexAttribArray(VERTEX_ATTR_TEX_COORD);
+
+    glVertexAttribPointer(VERTEX_ATTR_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, position));
+    glVertexAttribPointer(VERTEX_ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, normal));
+    glVertexAttribPointer(VERTEX_ATTR_TEX_COORD, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, texCoords));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return vao;
+}
 
 int main(int argc, char **argv)
 {
@@ -86,56 +179,23 @@ int main(int argc, char **argv)
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
     
     Cuboid cuboid(glm::vec3(1.f, 1.f, 1.f));
+    GLuint cuboidVAO = makeVAO(cuboid.getVertexCount(), cuboid.getDataPointer());    
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * cuboid.getVertexCount(), cuboid.getDataPointer(), GL_STATIC_DRAW);
+    std::vector<glm::vec3> points{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
+    std::vector<glm::vec3> rightPoints = leftTrack(points, .05f);
+    std::vector<glm::vec3> leftPoints = rightTrack(points, .05f);
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    std::vector<glm::vec3> trackPoints = smoothPath(points, 0.1, 10);
+    rightPoints = smoothPath(rightPoints, 0.1, 10);
+    leftPoints = smoothPath(leftPoints, 0.1, 10);
 
-    const GLuint VERTEX_ATTR_POSITION = 0;
-    const GLuint VERTEX_ATTR_NORMAL = 1;
-    const GLuint VERTEX_ATTR_TEX_COORD = 2;
-
-    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
-    glEnableVertexAttribArray(VERTEX_ATTR_TEX_COORD);
-
-    glVertexAttribPointer(VERTEX_ATTR_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, position));
-    glVertexAttribPointer(VERTEX_ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, normal));
-    glVertexAttribPointer(VERTEX_ATTR_TEX_COORD, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, texCoords));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
-    trackPoints = smoothPath(trackPoints, 0.1, 10);
     Track t(trackPoints);
+    Rail railRight(rightPoints, .01f);
+    Rail railLeft(leftPoints, .01f);
 
-    Rail rail(trackPoints, .01f);
+    GLuint rightVAO = makeVAO(railRight.getVertexCount(), railRight.getDataPointer()); 
+    GLuint leftVAO = makeVAO(railLeft.getVertexCount(), railLeft.getDataPointer()); 
 
-    GLuint vbo2;
-    glGenBuffers(1, &vbo2);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * rail.getVertexCount(), rail.getDataPointer(), GL_STATIC_DRAW);
-
-    GLuint vao2;
-    glGenVertexArrays(1, &vao2);
-    glBindVertexArray(vao2);
-
-    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
-    glEnableVertexAttribArray(VERTEX_ATTR_TEX_COORD);
-
-    glVertexAttribPointer(VERTEX_ATTR_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, position));
-    glVertexAttribPointer(VERTEX_ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, normal));
-    glVertexAttribPointer(VERTEX_ATTR_TEX_COORD, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, texCoords));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     glm::mat4 projMatrix;
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
@@ -172,7 +232,7 @@ int main(int argc, char **argv)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindVertexArray(vao);
+        glBindVertexArray(cuboidVAO);
 
         glm::mat4 rotateMAt = t.currentTransform();
 
@@ -187,7 +247,7 @@ int main(int argc, char **argv)
 
         glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
 
-        glBindVertexArray(vao2);
+        glBindVertexArray(rightVAO);
 
         MVMatrix = glm::mat4(1.f);
         MVMatrix = camera.getViewMatrix() * MVMatrix;
@@ -195,7 +255,17 @@ int main(int argc, char **argv)
         glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
         glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
 
-        glDrawArrays(GL_TRIANGLES, 0, rail.getVertexCount());
+        glDrawArrays(GL_TRIANGLES, 0, railRight.getVertexCount());
+
+        glBindVertexArray(leftVAO);
+
+        MVMatrix = glm::mat4(1.f);
+        MVMatrix = camera.getViewMatrix() * MVMatrix;
+        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
+        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
+        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+
+        glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());
 
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
@@ -205,7 +275,7 @@ int main(int argc, char **argv)
         float deltaTime = nextTime - time;
         time = nextTime;
 
-        t.advance(-deltaTime);
+        t.advance(-0.1 * deltaTime);
 
         if (windowManager.isMouseButtonPressed(SDL_BUTTON_RIGHT))
         {

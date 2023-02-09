@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-#include "glimac/common.hpp"
+#include "common.hpp"
 
 namespace glimac
 {
