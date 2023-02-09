@@ -6,37 +6,10 @@
 #include <glimac/Program.hpp>
 #include <glimac/FreeflyCamera.hpp>
 #include <glimac/Track.hpp>
+#include <glimac/Rails.hpp>
 #include <vector>
 
 using namespace glimac;
-
-std::vector<glm::mat4> rails(std::vector<glm::vec3> track_points, int n)
-{
-    std::vector<glm::mat4> r(2*n);
-
-    Track t(track_points);
-    float step_length = t.lenght()/n;
-    glm::mat4 scaling = glm::scale(glm::mat4(1.f), step_length*glm::vec3(1.f, .25f, .25f));
-
-    for(int i(0); i < n; i++)
-    {
-        glm::mat4 base = t.currentTransform();
-        glm::vec3 side = glm::normalize(glm::cross(t.currentDirection(), glm::vec3(0.f,1.f,0.f)));
-
-        glm::mat4 transform_side_1(1.f);
-        transform_side_1 = glm::translate(transform_side_1, .05f * side);
-        transform_side_1 = transform_side_1 * base * scaling;
-        r[2*i] = transform_side_1;
-
-        glm::mat4 transform_side_2(1.f);
-        transform_side_2 = glm::translate(transform_side_2, -.05f * side);
-        transform_side_2 = transform_side_2 * base * scaling;
-        r[2*i + 1] = transform_side_2;
-
-        t.advance(step_length);
-    }
-    return r;
-}
 
 std::vector<glm::vec3> smoothPath(std::vector<glm::vec3> track_points, float smooth_range, int smooth_points)
 {
@@ -109,13 +82,15 @@ int main(int argc, char **argv)
     Program program = loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
         applicationPath.dirPath() + "shaders/normals.fs.glsl");
     program.use();
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.5f, 0.5f, 0.5f, 1.f);
     
-    Cuboid sphere(glm::vec3(1.f, 1.f, 1.f));
+    Cuboid cuboid(glm::vec3(1.f, 1.f, 1.f));
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * sphere.getVertexCount(), sphere.getDataPointer(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * cuboid.getVertexCount(), cuboid.getDataPointer(), GL_STATIC_DRAW);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -136,33 +111,46 @@ int main(int argc, char **argv)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    
+    std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
+    trackPoints = smoothPath(trackPoints, 0.1, 10);
+    Track t(trackPoints);
 
-    glEnable(GL_DEPTH_TEST);
+    Rail rail(trackPoints, .01f);
+
+    GLuint vbo2;
+    glGenBuffers(1, &vbo2);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * rail.getVertexCount(), rail.getDataPointer(), GL_STATIC_DRAW);
+
+    GLuint vao2;
+    glGenVertexArrays(1, &vao2);
+    glBindVertexArray(vao2);
+
+    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
+    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
+    glEnableVertexAttribArray(VERTEX_ATTR_TEX_COORD);
+
+    glVertexAttribPointer(VERTEX_ATTR_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, position));
+    glVertexAttribPointer(VERTEX_ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, normal));
+    glVertexAttribPointer(VERTEX_ATTR_TEX_COORD, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, texCoords));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     glm::mat4 projMatrix;
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
-
     FreeflyCamera camera;
-    camera.moveFront(-5.f);
-
-    glm::ivec2 mousePos = windowManager.getMousePosition();
-    float time = windowManager.getTime();
+    camera.moveFront(-5.f);    
 
     GLuint uMVPMatrix;
     GLuint uMVMatrix;
     GLuint uNormalMatrix;
-
     uMVPMatrix = glGetUniformLocation(program.getGLId(), "uMVPMatrix");
     uMVMatrix = glGetUniformLocation(program.getGLId(), "uMVMatrix");
     uNormalMatrix = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
 
-    std::vector<glm::vec3> trackPoints{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
-    trackPoints = smoothPath(trackPoints, 0.2f, 100);
-    Track t(trackPoints);
-    std::vector<glm::mat4> rail_transform = rails(trackPoints, 1000);
-    
-    glm::vec3 globalUp(0.f, 1.f, 0.f);
+    glm::ivec2 mousePos = windowManager.getMousePosition();
+    float time = windowManager.getTime();
 
     // Application loop:
     bool done = false;
@@ -197,29 +185,17 @@ int main(int argc, char **argv)
         glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
         glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
 
-        glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+        glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
 
-        for(glm::mat4 transform : rail_transform)
-        {
-            MVMatrix = camera.getViewMatrix() * transform;
-            glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-            glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
-            glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+        glBindVertexArray(vao2);
 
-            glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
-        }
-
-        /*
         MVMatrix = glm::mat4(1.f);
-        MVMatrix = glm::translate(MVMatrix, glm::vec3(2.5f,-.5f,-1.f));
-        MVMatrix = glm::scale(MVMatrix, glm::vec3(5.f, 1.f, 2.f));
         MVMatrix = camera.getViewMatrix() * MVMatrix;
         glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
         glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
         glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
 
-        glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
-        */
+        glDrawArrays(GL_TRIANGLES, 0, rail.getVertexCount());
 
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
@@ -238,13 +214,13 @@ int main(int argc, char **argv)
         }
 
         if (windowManager.isKeyPressed(SDLK_z))
-            camera.moveFront(10.f*deltaTime);
+            camera.moveFront(2.5f*deltaTime);
         if (windowManager.isKeyPressed(SDLK_s))
-            camera.moveFront(-10.f * deltaTime);
+            camera.moveFront(-2.5f * deltaTime);
         if (windowManager.isKeyPressed(SDLK_d))
-            camera.moveLeft(-10.f * deltaTime);
+            camera.moveLeft(-2.5f * deltaTime);
         if (windowManager.isKeyPressed(SDLK_q))
-            camera.moveLeft(10.f * deltaTime);
+            camera.moveLeft(2.5f * deltaTime);
 
         glBindVertexArray(0);
 
