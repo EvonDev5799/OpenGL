@@ -65,9 +65,13 @@ std::vector<glm::vec3> rightTrack(std::vector<glm::vec3> points, float offset)
         side1 = glm::normalize(glm::cross(dir1, up));
         side2 = glm::normalize(glm::cross(dir2, up));
         float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
-        if ( curve > 0)
+        if ( curve >= 0)
         {
-            r.push_back(b + ((side1 + side2) * offset)/2.f);
+            float frac1, frac2;
+            frac1 = offset/(glm::dot(side2,-dir1));
+            frac2 = offset/(glm::dot(side1,dir2));
+
+            r.push_back(b - dir1*frac1 + dir2*frac2);
         }
         else
         {
@@ -97,9 +101,13 @@ std::vector<glm::vec3> leftTrack(std::vector<glm::vec3> points, float offset)
         side1 = glm::normalize(glm::cross(up, dir1));
         side2 = glm::normalize(glm::cross(up, dir2));
         float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
-        if ( curve > 0)
+        if ( curve >= 0)
         {
-            r.push_back(b + ((side1 + side2) * offset)/2.f);
+            float frac1, frac2;
+            frac1 = offset/(glm::dot(side2,-dir1));
+            frac2 = offset/(glm::dot(side1,dir2));
+
+            r.push_back(b - dir1*frac1 + dir2*frac2);
         }
         else
         {
@@ -149,6 +157,13 @@ GLuint makeVAO(int vertex_count, const ShapeVertex* data_ptr)
     return vao;
 }
 
+void setUniforms(glm::mat4 MVMatrix,glm::mat4 projMatrix, GLuint uMVMatrix, GLuint uNormalMatrix, GLuint uMVPMatrix)
+{
+    glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
+    glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
+    glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
+}
+
 int main(int argc, char **argv)
 {
     WindowParameters window_params = WindowParameters(800, 600, "GLImac");
@@ -182,20 +197,20 @@ int main(int argc, char **argv)
     GLuint cuboidVAO = makeVAO(cuboid.getVertexCount(), cuboid.getDataPointer());    
 
     std::vector<glm::vec3> points{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
-    std::vector<glm::vec3> rightPoints = leftTrack(points, .05f);
-    std::vector<glm::vec3> leftPoints = rightTrack(points, .05f);
-
     std::vector<glm::vec3> trackPoints = smoothPath(points, 0.1, 10);
+    std::vector<glm::vec3> rightPoints = rightTrack(points, .05f);
+    std::vector<glm::vec3> leftPoints = leftTrack(points, .05f);
     rightPoints = smoothPath(rightPoints, 0.1, 10);
     leftPoints = smoothPath(leftPoints, 0.1, 10);
 
     Track t(trackPoints);
     Rail railRight(rightPoints, .01f);
     Rail railLeft(leftPoints, .01f);
+    Rail railCenter(trackPoints, .01f);
 
     GLuint rightVAO = makeVAO(railRight.getVertexCount(), railRight.getDataPointer()); 
     GLuint leftVAO = makeVAO(railLeft.getVertexCount(), railLeft.getDataPointer()); 
-
+    GLuint centerVAO = makeVAO(railCenter.getVertexCount(), railCenter.getDataPointer()); 
 
     glm::mat4 projMatrix;
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
@@ -241,31 +256,26 @@ int main(int argc, char **argv)
         MVMatrix = MVMatrix * rotateMAt;
         MVMatrix = glm::scale(MVMatrix, glm::vec3(.2f, .1f, .1f));
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
-        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-
+        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
         glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
 
         glBindVertexArray(rightVAO);
-
         MVMatrix = glm::mat4(1.f);
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
-        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-
+        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
         glDrawArrays(GL_TRIANGLES, 0, railRight.getVertexCount());
 
         glBindVertexArray(leftVAO);
-
         MVMatrix = glm::mat4(1.f);
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-        glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
-        glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-
+        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
         glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());
+
+        glBindVertexArray(centerVAO);
+        MVMatrix = glm::mat4(1.f);
+        MVMatrix = camera.getViewMatrix() * MVMatrix;
+        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
+        glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());        
 
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
