@@ -170,8 +170,8 @@ void SetLightUniforms(glm::vec4 projected_light_dir, GLuint uLightDir_vs, GLuint
     glUniform3f(uLightDir_vs, projected_light_dir.x, projected_light_dir.y, projected_light_dir.z);
     glUniform3f(uLightIntensity, 1.f, 1.f, 1.f);
     glUniform3f(uKd, .5f,.5f,.5f);
-    glUniform3f(uKs, .5f,0.5f,.5f);
-    glUniform1f(uShininess, 1.f);
+    glUniform3f(uKs, .5f,.5f,.5f);
+    glUniform1f(uShininess, 50.f);
 }
 
 }

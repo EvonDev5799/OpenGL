@@ -87,11 +87,18 @@ namespace glimac
     {
         glm::vec3 global_up(0.f, 1.f, 0.f);
         glm::vec3 direction = currentDirection();
+        std::cout << direction << std::endl;
         float verticalAngle = -glm::acos(glm::dot(direction, global_up)) - glm::pi<float>()/2;
+        std::cout << verticalAngle << std::endl;
 
         glm::vec3 horizontalVec(direction.x, 0.f, direction.z);
         horizontalVec = glm::normalize(horizontalVec);
-        float horizontalAngle = -glm::sign(direction.z) * glm::acos(glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f)));
+        std::cout << horizontalVec << std::endl;
+        std::cout << glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f)) << std::endl;
+        std::cout << glm::acos(glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f))) << std::endl;
+        float sign = direction.z == 0 ? 1 : -glm::sign(direction.z);
+        float horizontalAngle = sign * glm::acos(glm::dot(horizontalVec, glm::vec3(1.f, 0.f, 0.f)));
+        std::cout << horizontalAngle << std::endl << std::endl;
 
 
 

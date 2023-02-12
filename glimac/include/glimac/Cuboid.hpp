@@ -25,6 +25,8 @@ private:
     GLsizei m_nVertexCount; // Nombre de sommets
 
     // Alloue et construit les données (implantation dans le .cpp)
+    void makeFace(std::array<glm::vec3, 4> square);
+    
     void build(glm::vec3 diagonal);
 };
     

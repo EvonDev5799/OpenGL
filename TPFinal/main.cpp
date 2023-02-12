@@ -14,7 +14,7 @@ using namespace glimac;
 int main(int argc, char **argv)
 {
 
-    WindowParameters window_params = WindowParameters(800, 600, "GLImac");
+    WindowParameters window_params = WindowParameters(600, 800, "GLImac");
 
     // Initialize SDL and open a window
     SDLWindowManager windowManager(window_params.height, window_params.width, window_params.title);
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     Cuboid cuboid(glm::vec3(1.f, 1.f, 1.f));
     GLuint cuboidVAO = makeVAO(cuboid.getVertexCount(), cuboid.getDataPointer());    
 
-    std::vector<glm::vec3> points{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
+    std::vector<glm::vec3> points{glm::vec3(.2f, .1f, .2f), glm::vec3(1.8f, .5f, .2f),glm::vec3(1.8f, 1.f, 1.8f),glm::vec3(.2f, .5f, 1.8f)};
     std::vector<glm::vec3> trackPoints = smoothPath(points, 0.2, 10);
     std::vector<glm::vec3> rightPoints = rightTrack(trackPoints, .05f);
     std::vector<glm::vec3> leftPoints = leftTrack(trackPoints, .05f);
@@ -67,6 +67,28 @@ int main(int argc, char **argv)
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
     FreeflyCamera camera;
     camera.moveFront(-5.f);
+
+    std::vector<glm::mat4> pillarTransforms;
+    int pillarPerRail = 20;
+    Track track1(rightPoints);
+    Track track2(leftPoints);
+    float step1 = track1.lenght()/pillarPerRail;
+    float step2 = track2.lenght()/pillarPerRail;
+    for (int i(0); i < pillarPerRail; i++)
+    {
+        glm::mat4 mat1(1.f);
+        glm::mat4 mat2(1.f);
+        glm::vec3 pos1 = track1.currentLocation();
+        glm::vec3 pos2 = track2.currentLocation();
+        mat1 = glm::translate(mat1, glm::vec3(pos1.x, pos1.y/2, pos1.z));
+        mat1 = glm::scale(mat1, glm::vec3(.01f, pos1.y, .01f));
+        mat2 = glm::translate(mat2, glm::vec3(pos2.x, pos2.y/2, pos2.z));
+        mat2 = glm::scale(mat2, glm::vec3(.01f, pos1.y, .01f));
+        pillarTransforms.push_back(mat1);
+        pillarTransforms.push_back(mat2);
+        track1.advance(step1);
+        track2.advance(step2);
+    }
 
     glm::ivec2 mousePos = windowManager.getMousePosition();
     float time = windowManager.getTime();
@@ -96,14 +118,14 @@ int main(int argc, char **argv)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec4 projected_light_dir = camera.getViewMatrix()*glm::vec4(1.f,1.f,1.f, 0.f);
+        glm::vec4 projected_light_dir = camera.getViewMatrix()*glm::normalize(glm::vec4(1.f,1.f,1.f, 0.f));
 
         glBindVertexArray(cuboidVAO);
         monoTexProgram.m_Program.use();
         glUniform1i(monoTexProgram.uTexture, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cartTexture);
-
+        
         glm::mat4 rotateMAt = t.currentTransform();
         glm::mat4 MVMatrix = glm::mat4(1.f);
         MVMatrix = glm::translate(MVMatrix, glm::vec3(0.f, .05f, 0.f));
@@ -114,15 +136,22 @@ int main(int argc, char **argv)
         SetLightUniforms(projected_light_dir, monoTexProgram.uLightDir_vs,monoTexProgram.uLightIntensity,monoTexProgram.uKd,monoTexProgram.uKs, monoTexProgram.uShininess);
 
         glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
-
+        
         MVMatrix = glm::mat4(1.f);
         MVMatrix = glm::translate(MVMatrix, glm::vec3(1.f, -.1f, 1.f));
         MVMatrix = glm::scale(MVMatrix, glm::vec3(2.f, .2f, 2.f));
         MVMatrix = camera.getViewMatrix() * MVMatrix;
         SetUniforms(MVMatrix, projMatrix, monoTexProgram.uMVMatrix, monoTexProgram.uNormalMatrix, monoTexProgram.uMVPMatrix);
-        SetLightUniforms(projected_light_dir, monoTexProgram.uLightDir_vs,monoTexProgram.uLightIntensity,monoTexProgram.uKd,monoTexProgram.uKs, monoTexProgram.uShininess);
 
         glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
+
+        for(glm::mat4 transform : pillarTransforms)
+        {
+            MVMatrix = camera.getViewMatrix() * transform;
+            SetUniforms(MVMatrix, projMatrix, monoTexProgram.uMVMatrix, monoTexProgram.uNormalMatrix, monoTexProgram.uMVPMatrix);
+
+            glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
+        }
 
         glBindVertexArray(rightVAO);
         biTexProgram.m_Program.use();
@@ -147,7 +176,7 @@ int main(int argc, char **argv)
         SetUniforms(MVMatrix, projMatrix, biTexProgram.uMVMatrix, biTexProgram.uNormalMatrix, biTexProgram.uMVPMatrix);
 
         glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());     
-
+        
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
         mousePos = nextMousePos;

@@ -15,7 +15,7 @@ in vec2 vTexCoords; // Coordonnées de texture du sommet
 out vec3 fFragColor;
 
 vec3 blinnPhong() {
-    return uLightIntensity * (uKd * (dot(normalize(uLightDir_vs),vNormal_vs)) + uKs * pow(dot(((normalize(-vPosition_vs)+uLightIntensity)/2), vNormal_vs), uShininess));
+    return uLightIntensity * (uKd * (dot(normalize(uLightDir_vs),normalize(vNormal_vs))) + 0 * pow(dot(((normalize(-vPosition_vs)+normalize(uLightDir_vs))/2), normalize(vNormal_vs)), uShininess));
 }
 
 void main() {
