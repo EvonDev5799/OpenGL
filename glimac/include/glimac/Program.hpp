@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <GL/glew.h>
 #include "Shader.hpp"
 #include "FilePath.hpp"
@@ -54,5 +55,62 @@ Program buildProgram(const GLchar* vsSrc, const GLchar* fsSrc);
 // Load source code from files and build a GLSL program
 Program loadProgram(const FilePath& vsFile, const FilePath& fsFile);
 
+struct MonoTexProgram {
+    Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uTexture;
+    GLint uLightDir_vs;
+    GLint uLightIntensity;
+    GLint uKd;
+    GLint uKs;
+    GLint uShininess;
+
+    MonoTexProgram(const FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "shaders/texDL3D.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uTexture = glGetUniformLocation(m_Program.getGLId(), "uTexture");
+        uLightDir_vs = glGetUniformLocation(m_Program.getGLId(), "uLightDir_vs");
+        uLightIntensity = glGetUniformLocation(m_Program.getGLId(), "uLightIntensity");
+        uKd = glGetUniformLocation(m_Program.getGLId(), "uKd");
+        uKs = glGetUniformLocation(m_Program.getGLId(), "uKs");
+        uShininess = glGetUniformLocation(m_Program.getGLId(), "uShininess");
+    }
+};
+
+struct BiTexProgram {
+    Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uTexture0;
+    GLint uTexture1;
+    GLint uLightDir_vs;
+    GLint uLightIntensity;
+    GLint uKd;
+    GLint uKs;
+    GLint uShininess;
+
+    BiTexProgram(const FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "shaders/multiTexDL3D.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uTexture0 = glGetUniformLocation(m_Program.getGLId(), "uTexture0");
+        uTexture1 = glGetUniformLocation(m_Program.getGLId(), "uTexture1");
+        uLightDir_vs = glGetUniformLocation(m_Program.getGLId(), "uLightDir_vs");
+        uLightIntensity = glGetUniformLocation(m_Program.getGLId(), "uLightIntensity");
+        uKd = glGetUniformLocation(m_Program.getGLId(), "uKd");
+        uKs = glGetUniformLocation(m_Program.getGLId(), "uKs");
+        uShininess = glGetUniformLocation(m_Program.getGLId(), "uShininess");
+    }
+};
 
 }

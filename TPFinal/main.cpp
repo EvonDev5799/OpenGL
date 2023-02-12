@@ -11,161 +11,9 @@
 
 using namespace glimac;
 
-std::vector<glm::vec3> smoothPath(std::vector<glm::vec3> track_points, float smooth_range, int smooth_points)
-{
-    if(smooth_range > 0.5f || smooth_range < 0.f)
-        std::cout << "smooth_range value out of [0 , 0.5]" << std::endl;
-
-    std::vector<glm::vec3> r;
-
-    int source_size = track_points.size();
-    for(int i(0); i < source_size; i++ )
-    {
-        glm::vec3 prev = track_points[i];
-        glm::vec3 center = track_points[(i + 1)%source_size];
-        glm::vec3 next = track_points[(i + 2)%source_size];
-
-        glm::vec3 toprev = prev - center;
-        glm::vec3 tonext = next - center;
-
-        glm::vec3 point1 = center  + smooth_range * toprev;
-        glm::vec3 point2 = center;
-        glm::vec3 point3 = center  + smooth_range * tonext;
-
-        for(int j(0); j < smooth_points + 2; j++)
-        {
-            float t = ((float)j)/(smooth_points + 1);
-            glm::vec3 intermediate1 = (1-t)*point1 + t*point2;
-            glm::vec3 intermediate2 = (1-t)*point2 + t*point3;
-            glm::vec3 final = (1-t)*intermediate1 + t*intermediate2;
-
-            r.push_back(final);
-        }
-
-    }
-    return r;
-}
-
-std::vector<glm::vec3> rightTrack(std::vector<glm::vec3> points, float offset)
-{
-    std::vector<glm::vec3> r;
-    glm::vec3 a, b, c, dir1, dir2, side1, side2;
-    glm::vec3 up(0.f, 1.f, 0.f);
-    int n = points.size();
-
-    for(int i(0); i < n; i++)
-    {
-        a = points[i];
-        b = points[(i+1)%n];
-        c = points[(i+2)%n];
-
-        dir1 = glm::normalize(b-a);
-        dir2 = glm::normalize(c-b);
-
-        side1 = glm::normalize(glm::cross(dir1, up));
-        side2 = glm::normalize(glm::cross(dir2, up));
-        float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
-        if ( curve >= 0)
-        {
-            float frac1, frac2;
-            frac1 = offset/(glm::dot(side2,-dir1));
-            frac2 = offset/(glm::dot(side1,dir2));
-
-            r.push_back(b - dir1*frac1 + dir2*frac2);
-        }
-        else
-        {
-            r.push_back(b + side1 * offset);
-            r.push_back(b + side2 * offset);
-        }
-    }
-    return r;
-}
-
-std::vector<glm::vec3> leftTrack(std::vector<glm::vec3> points, float offset)
-{
-    std::vector<glm::vec3> r;
-    glm::vec3 a, b, c, dir1, dir2, side1, side2;
-    glm::vec3 up(0.f, 1.f, 0.f);
-    int n = points.size();
-
-    for(int i(0); i < n; i++)
-    {
-        a = points[i];
-        b = points[(i+1)%n];
-        c = points[(i+2)%n];
-
-        dir1 = glm::normalize(b-a);
-        dir2 = glm::normalize(c-b);
-
-        side1 = glm::normalize(glm::cross(up, dir1));
-        side2 = glm::normalize(glm::cross(up, dir2));
-        float curve = glm::dot(dir2, side1) - glm::dot(dir1, side1);
-        if ( curve >= 0)
-        {
-            float frac1, frac2;
-            frac1 = offset/(glm::dot(side2,-dir1));
-            frac2 = offset/(glm::dot(side1,dir2));
-
-            r.push_back(b - dir1*frac1 + dir2*frac2);
-        }
-        else
-        {
-            r.push_back(b + side1 * offset);
-            r.push_back(b + side2 * offset);
-        }
-    }
-    return r;
-}
-
-struct WindowParameters
-{
-
-    uint32_t width;
-    uint32_t height;
-    const char *title;
-
-    WindowParameters(uint32_t width, uint32_t height, const char *title) : width(width), height(height), title(title) {}
-};
-
-GLuint makeVAO(int vertex_count, const ShapeVertex* data_ptr)
-{
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ShapeVertex) * vertex_count, data_ptr, GL_STATIC_DRAW);
-
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    const GLuint VERTEX_ATTR_POSITION = 0;
-    const GLuint VERTEX_ATTR_NORMAL = 1;
-    const GLuint VERTEX_ATTR_TEX_COORD = 2;
-
-    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
-    glEnableVertexAttribArray(VERTEX_ATTR_TEX_COORD);
-
-    glVertexAttribPointer(VERTEX_ATTR_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, position));
-    glVertexAttribPointer(VERTEX_ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, normal));
-    glVertexAttribPointer(VERTEX_ATTR_TEX_COORD, 3, GL_FLOAT, GL_FALSE, sizeof(ShapeVertex), (void *)offsetof(ShapeVertex, texCoords));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    return vao;
-}
-
-void setUniforms(glm::mat4 MVMatrix,glm::mat4 projMatrix, GLuint uMVMatrix, GLuint uNormalMatrix, GLuint uMVPMatrix)
-{
-    glUniformMatrix4fv(uMVMatrix, 1, GL_FALSE, glm::value_ptr(MVMatrix));
-    glUniformMatrix4fv(uNormalMatrix, 1, GL_FALSE,glm::value_ptr(glm::transpose(glm::inverse(MVMatrix))));
-    glUniformMatrix4fv(uMVPMatrix, 1, GL_FALSE, glm::value_ptr(projMatrix * MVMatrix));
-}
-
 int main(int argc, char **argv)
 {
+
     WindowParameters window_params = WindowParameters(800, 600, "GLImac");
 
     // Initialize SDL and open a window
@@ -187,45 +35,46 @@ int main(int argc, char **argv)
      *********************************/
 
     FilePath applicationPath(argv[0]);
-    Program program = loadProgram(applicationPath.dirPath() + "shaders/3D.vs.glsl",
-        applicationPath.dirPath() + "shaders/normals.fs.glsl");
-    program.use();
+    MonoTexProgram monoTexProgram(applicationPath);
+    BiTexProgram biTexProgram(applicationPath);
+
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.5f, 0.5f, 0.5f, 1.f);
+
+    GLuint cartTexture = makeTexture("../assets/textures/SteelTexture.jpg");
+    GLuint railTexture0 = makeTexture("../assets/textures/SteelTexture.jpg");
+    GLuint railTexture1 = makeTexture("../assets/textures/RustTexture.jpg");
     
     Cuboid cuboid(glm::vec3(1.f, 1.f, 1.f));
     GLuint cuboidVAO = makeVAO(cuboid.getVertexCount(), cuboid.getDataPointer());    
 
     std::vector<glm::vec3> points{glm::vec3(0.f, 0.f, 0.f), glm::vec3(2.f, 1.f, 1.f),glm::vec3(2.f, 0.5f, 0.f),glm::vec3(3.f, 0.f, 0.f), glm::vec3(1.5f, 0.f, -1.f)};
-    std::vector<glm::vec3> trackPoints = smoothPath(points, 0.1, 10);
-    std::vector<glm::vec3> rightPoints = rightTrack(points, .05f);
-    std::vector<glm::vec3> leftPoints = leftTrack(points, .05f);
-    rightPoints = smoothPath(rightPoints, 0.1, 10);
-    leftPoints = smoothPath(leftPoints, 0.1, 10);
+    std::vector<glm::vec3> trackPoints = smoothPath(points, 0.2, 10);
+    std::vector<glm::vec3> rightPoints = rightTrack(trackPoints, .05f);
+    std::vector<glm::vec3> leftPoints = leftTrack(trackPoints, .05f);
+    rightPoints = smoothPath(rightPoints, 0.2, 10);
+    leftPoints = smoothPath(leftPoints, 0.2, 10);
 
     Track t(trackPoints);
+
     Rail railRight(rightPoints, .01f);
     Rail railLeft(leftPoints, .01f);
-    Rail railCenter(trackPoints, .01f);
 
     GLuint rightVAO = makeVAO(railRight.getVertexCount(), railRight.getDataPointer()); 
-    GLuint leftVAO = makeVAO(railLeft.getVertexCount(), railLeft.getDataPointer()); 
-    GLuint centerVAO = makeVAO(railCenter.getVertexCount(), railCenter.getDataPointer()); 
+    GLuint leftVAO = makeVAO(railLeft.getVertexCount(), railLeft.getDataPointer());
 
     glm::mat4 projMatrix;
     projMatrix = glm::perspective(glm::radians(70.f), (float)window_params.height / window_params.width, 0.1f, 100.f);
     FreeflyCamera camera;
-    camera.moveFront(-5.f);    
-
-    GLuint uMVPMatrix;
-    GLuint uMVMatrix;
-    GLuint uNormalMatrix;
-    uMVPMatrix = glGetUniformLocation(program.getGLId(), "uMVPMatrix");
-    uMVMatrix = glGetUniformLocation(program.getGLId(), "uMVMatrix");
-    uNormalMatrix = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
+    camera.moveFront(-5.f);
 
     glm::ivec2 mousePos = windowManager.getMousePosition();
     float time = windowManager.getTime();
+
+    float friction = 0.9f;
+    float speed = 0.f;
+    float engineForce = 1.f;
+    glm::vec3 g(0, -2.f, 0);
 
     // Application loop:
     bool done = false;
@@ -247,35 +96,57 @@ int main(int argc, char **argv)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glm::vec4 projected_light_dir = camera.getViewMatrix()*glm::vec4(1.f,1.f,1.f, 0.f);
+
         glBindVertexArray(cuboidVAO);
+        monoTexProgram.m_Program.use();
+        glUniform1i(monoTexProgram.uTexture, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cartTexture);
 
         glm::mat4 rotateMAt = t.currentTransform();
-
         glm::mat4 MVMatrix = glm::mat4(1.f);
         MVMatrix = glm::translate(MVMatrix, glm::vec3(0.f, .05f, 0.f));
         MVMatrix = MVMatrix * rotateMAt;
         MVMatrix = glm::scale(MVMatrix, glm::vec3(.2f, .1f, .1f));
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
+        SetUniforms(MVMatrix, projMatrix, monoTexProgram.uMVMatrix, monoTexProgram.uNormalMatrix, monoTexProgram.uMVPMatrix);
+        SetLightUniforms(projected_light_dir, monoTexProgram.uLightDir_vs,monoTexProgram.uLightIntensity,monoTexProgram.uKd,monoTexProgram.uKs, monoTexProgram.uShininess);
+
+        glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
+
+        MVMatrix = glm::mat4(1.f);
+        MVMatrix = glm::translate(MVMatrix, glm::vec3(1.f, -.1f, 1.f));
+        MVMatrix = glm::scale(MVMatrix, glm::vec3(2.f, .2f, 2.f));
+        MVMatrix = camera.getViewMatrix() * MVMatrix;
+        SetUniforms(MVMatrix, projMatrix, monoTexProgram.uMVMatrix, monoTexProgram.uNormalMatrix, monoTexProgram.uMVPMatrix);
+        SetLightUniforms(projected_light_dir, monoTexProgram.uLightDir_vs,monoTexProgram.uLightIntensity,monoTexProgram.uKd,monoTexProgram.uKs, monoTexProgram.uShininess);
+
         glDrawArrays(GL_TRIANGLES, 0, cuboid.getVertexCount());
 
         glBindVertexArray(rightVAO);
+        biTexProgram.m_Program.use();
+        glUniform1i(biTexProgram.uTexture0, 0);
+        glUniform1i(biTexProgram.uTexture1, 1);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, railTexture0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, railTexture1);
+
         MVMatrix = glm::mat4(1.f);
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
+        SetUniforms(MVMatrix, projMatrix, biTexProgram.uMVMatrix, biTexProgram.uNormalMatrix, biTexProgram.uMVPMatrix);
+        SetLightUniforms(projected_light_dir, biTexProgram.uLightDir_vs,biTexProgram.uLightIntensity,biTexProgram.uKd,biTexProgram.uKs, biTexProgram.uShininess);
+
         glDrawArrays(GL_TRIANGLES, 0, railRight.getVertexCount());
 
         glBindVertexArray(leftVAO);
-        MVMatrix = glm::mat4(1.f);
-        MVMatrix = camera.getViewMatrix() * MVMatrix;
-        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
-        glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());
 
-        glBindVertexArray(centerVAO);
         MVMatrix = glm::mat4(1.f);
         MVMatrix = camera.getViewMatrix() * MVMatrix;
-        setUniforms(MVMatrix, projMatrix, uMVMatrix, uNormalMatrix, uMVPMatrix);
-        glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());        
+        SetUniforms(MVMatrix, projMatrix, biTexProgram.uMVMatrix, biTexProgram.uNormalMatrix, biTexProgram.uMVPMatrix);
+
+        glDrawArrays(GL_TRIANGLES, 0, railLeft.getVertexCount());     
 
         glm::ivec2 nextMousePos = windowManager.getMousePosition();
         glm::ivec2 delta = nextMousePos - mousePos;
@@ -285,7 +156,10 @@ int main(int argc, char **argv)
         float deltaTime = nextTime - time;
         time = nextTime;
 
-        t.advance(-0.1 * deltaTime);
+        float acceleration = -friction*speed + glm::dot(t.currentDirection(), g) + engineForce;
+        speed += acceleration * deltaTime;
+
+        t.advance(deltaTime * speed);
 
         if (windowManager.isMouseButtonPressed(SDL_BUTTON_RIGHT))
         {

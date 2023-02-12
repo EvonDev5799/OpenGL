@@ -9,16 +9,6 @@
 
 using namespace glimac;
 
-struct WindowParameters
-{
-
-    uint32_t width;
-    uint32_t height;
-    const char *title;
-
-    WindowParameters(uint32_t width, uint32_t height, const char *title) : width(width), height(height), title(title) {}
-};
-
 int main(int argc, char **argv)
 {
     WindowParameters window_params = WindowParameters(800, 600, "GLImac");
@@ -143,11 +133,8 @@ int main(int argc, char **argv)
 
         glm::vec4 temp1 = camera.getViewMatrix()*glm::vec4(1.f,1.f,1.f, 0.f);
         glUniform3f(uLightDir_vs, temp1.x, temp1.y, temp1.z);
-        glm::vec3 temp2 = glm::sphericalRand(1.f);
         glUniform3f(uKd, 1.f,1.f,1.f);
-        temp2 = glm::sphericalRand(1.f);
         glUniform3f(uKs, 0.f,0.f,0.f);
-        temp2 = glm::sphericalRand(1.f);
         glUniform1f(uShininess, 1.f);
 
         glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());

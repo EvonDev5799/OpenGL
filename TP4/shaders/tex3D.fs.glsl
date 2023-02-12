@@ -10,5 +10,5 @@ in vec2 vTexCoords; // Coordonnées de texture du sommet
 out vec3 fFragColor;
 
 void main() {
-    fFragColor = fFragColor = texture(uTexture, vTexCoords).xyz;
+    fFragColor = texture(uTexture, vTexCoords).xyz;
 }

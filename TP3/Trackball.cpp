@@ -10,16 +10,6 @@
 
 using namespace glimac;
 
-struct WindowParameters
-{
-
-    uint32_t width;
-    uint32_t height;
-    const char *title;
-
-    WindowParameters(uint32_t width, uint32_t height, const char *title) : width(width), height(height), title(title) {}
-};
-
 struct EarthProgram {
     Program m_Program;
 
