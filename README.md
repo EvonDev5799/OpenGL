@@ -30,7 +30,7 @@ Le Projet implémente un système de parcours de Rollercoaster avec bon nombre d
 
 -	Enfin pour calculer des mouvements réalistes pour le wagon, un système simple imite la physique de celui-ci et calcule une pseudo accélération et une pseudo vitesse.
 
-Guide d'installation:
+Guide d'installation:\
 néçéssite un Système d'exploitation Linux et Cmake d'installé\
 
 lancer la commande cmake puis make et executer "main.cpp" dans le dossier TPFinal
