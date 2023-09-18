@@ -9,14 +9,10 @@ Thème : Rollercoaster
 ![image](https://github.com/EvonDev5799/OpenGL/assets/87436005/ccf97d62-d32c-48e8-8b70-b5b1039cadad)
  
 Détails des demandes et de leur respect :
-Demandes basiques
-DEMANDE	IMPLEMENTATION
-CAMERA MOBILE	Freefly utilisé, Trackball implémenté mais non exploité
-2 OBJETS TEXTURES	Tous les objets sont texturés
-TEXTURE D’ENVIRONNEMENT ET MODELISER UN TERRAIN 	Demande incomprise
-DEUX DONT UNE LUMIERE DIRECTIONNELLE TYPE « SOLEIL »	Une seule lumière, type soleil
-PARCOURS DE ROLLERCOASTER	Implémenté
-WAGONNET, MODELISE DE MANIERE ORIGINALE	Représenté de manière non original (simple cuboïde)
+caméra mobile, Freefly utilisé, Trackball implémenté mais non exploité
+Tous les objets sont texturés avec double texture
+Une seule lumière, type soleil
+parcours de rollercoaster implémenté
 
 Evolutions :
 	Le Projet implémente du multishadering avec un shader mono texture et un shader de multitexturing (à deux texture) tous les deux implémentant les fonctionnalités de lumière.
