@@ -29,3 +29,9 @@ Le Projet implémente un système de parcours de Rollercoaster avec bon nombre d
 -	Il est possible de lisser les courbes d’un trajet en formant un nouveau trajet à partir d’un échantillonnage de courbes de Bézier, elles-mêmes formées à partir des segments du trajet d’origine.
 
 -	Enfin pour calculer des mouvements réalistes pour le wagon, un système simple imite la physique de celui-ci et calcule une pseudo accélération et une pseudo vitesse.
+
+Guide d'installation:
+néçéssite un Système d'exploitation Linux et Cmake d'installé\
+
+lancer la commande cmake puis make et executer "main.cpp" dans le dossier TPFinal
+
