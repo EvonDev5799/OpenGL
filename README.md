@@ -6,7 +6,7 @@ Projet de synthèse d'images
 E5 Computer Graphics – Spring 2023
 Thème : Rollercoaster
 
-![image](https://github.com/EvonDev5799/OpenGL/assets/87436005/ccf97d62-d32c-48e8-8b70-b5b1039cadad)\
+![image](https://github.com/EvonDev5799/OpenGL/assets/87436005/ccf97d62-d32c-48e8-8b70-b5b1039cadad)
 
 Détails des fonctionnalités :
 
